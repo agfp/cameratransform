@@ -116,18 +116,43 @@ class SpatialOrientation(ClassWithParameterSet):
         self.t = np.array([self.parameters.pos_x_m, self.parameters.pos_y_m, self.parameters.elevation_m])
 
         # construct the rotation matrices for tilt, roll and heading
-        self.R_roll = np.array([[+np.cos(roll), np.sin(roll), 0],
-                                [-np.sin(roll), np.cos(roll), 0],
-                                [0, 0, 1]])
-        self.R_tilt = np.array([[1, 0, 0],
-                                [0, np.cos(tilt), np.sin(tilt)],
-                                [0, -np.sin(tilt), np.cos(tilt)]])
-        self.R_head = np.array([[np.cos(heading), -np.sin(heading), 0],
-                                [np.sin(heading), np.cos(heading), 0],
-                                [0, 0, 1]])
+        # (original)
+        # self.R_roll = np.array([[+np.cos(roll), np.sin(roll), 0],
+        #                         [-np.sin(roll), np.cos(roll), 0],
+        #                         [0, 0, 1]])
+        # self.R_tilt = np.array([[1, 0, 0],
+        #                         [0, np.cos(tilt), np.sin(tilt)],
+        #                         [0, -np.sin(tilt), np.cos(tilt)]])
+        # self.R_head = np.array([[np.cos(heading), -np.sin(heading), 0],
+        #                         [np.sin(heading), np.cos(heading), 0],
+        #                         [0, 0, 1]])
+        # self.R = np.dot(np.dot(self.R_roll, self.R_tilt), self.R_head)
+
+        # ZX'Y'' rotation - Sam 2022-07-02
+        # Z (Yaw)
+        self.R_head = np.array([
+            [ np.cos(heading), -np.sin(heading), 0],
+            [ np.sin(heading), np.cos(heading), 0],
+            [ 0, 0, 1 ]
+        ])
+        # X' (Pitch)
+        self.R_tilt = np.array([
+            [ 1, 0, 0 ],
+            [ 0, np.cos(tilt), np.sin(tilt) ],
+            [ 0, -np.sin(tilt), np.cos(tilt) ]
+        ])
+        # Y'' (Roll)
+        self.R_roll = np.array([
+            [ np.cos(roll), 0, -np.sin(roll) ],
+            [ 0, 1, 0 ],
+            [ np.sin(roll), 0, np.cos(roll) ]
+        ])
 
         self.R = np.dot(np.dot(self.R_roll, self.R_tilt), self.R_head)
-        self.R_inv = np.linalg.inv(self.R)
+        
+        # Rotation matrices are orthonormal, so transpose(R) === inverse(R). Transpose is simpler, faster, and (probably) more precise than more general inverse algorithms. https://en.wikipedia.org/wiki/Rotation_matrix#Multiplication - Sam 2022-07-02
+        # self.R_inv = np.linalg.inv(self.R)
+        self.R_inv = np.transpose(self.R) 
 
     def cameraFromSpace(self, points):
         """
@@ -162,6 +187,7 @@ class SpatialOrientation(ClassWithParameterSet):
         """
         points = np.array(points)
         return np.dot(points - self.t, self.R.T)
+
 
     def spaceFromCamera(self, points, direction=False):
         """

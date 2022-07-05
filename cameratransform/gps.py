@@ -20,6 +20,10 @@
 import numpy as np
 import re
 
+# earth_radius = 6371e3 # mean
+earth_radius = 6371007.2 # Authalic radius
+# earth_radius = 6378137.0 # equatorial
+# earth_radius = 6356752.0 # polar
 
 def formatGPS(lat, lon, format=None, asLatex=False):
     """
@@ -274,7 +278,8 @@ def gpsFromString(gps_string, height=None):
             return value
 
 
-def getBearing(point1, point2):
+# Added in_radians option here to avoid unnecessary radian->degree->radian conversion. Not sure if this actually makes any material difference to overall accuracy, probably not... - Sam 2022-07-02
+def getBearing(point1, point2, in_radians=False):
     r"""
     The angle relative :math:`\beta` to the north direction from point :math:`(\mathrm{lat}_1, \mathrm{lon}_1)` to point :math:`(\mathrm{lat}_2, \mathrm{lon}_2)`:
 
@@ -290,6 +295,8 @@ def getBearing(point1, point2):
         the first point from which to calculate the bearing, dimensions (2), (3), (Nx2), (Nx3)
     point2 : ndarray
         the second point to which to calculate the bearing, dimensions (2), (3), (Nx2), (Nx3)
+    in_radians : boolean
+        If true, returns the result in radians. Defaults to false.
 
     Returns
     -------
@@ -318,7 +325,8 @@ def getBearing(point1, point2):
     X = np.cos(lat2) * np.sin(dL)
     Y = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dL)
     beta = np.arctan2(X, Y)
-    return np.rad2deg(beta)
+
+    return beta if in_radians else np.rad2deg(beta)
 
 def splitGPS(x, keep_deg=False):
     x = np.array(x)
@@ -337,7 +345,7 @@ def splitGPS(x, keep_deg=False):
 def getDistance(point1, point2):
     r"""
     Calculate the great circle distance between two points :math:`(\mathrm{lat}_1, \mathrm{lon}_1)` and :math:`(\mathrm{lat}_2, \mathrm{lon}_2)`
-    on the earth (specified in decimal degrees)
+    on the earth (specified in decimal degrees). Uses the Haversine formula: https://en.wikipedia.org/wiki/Haversine_formula
 
     .. math::
         \Delta\mathrm{lon} &= \mathrm{lon}_2 - \mathrm{lon}_1\\
@@ -381,8 +389,9 @@ def getDistance(point1, point2):
 
     a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
 
-    c = 2 * np.arcsin(np.sqrt(a))
-    distance = 6371e3 * c
+    distance = earth_radius * 2.0 * np.arcsin(np.sqrt(a))
+
+    # print(f'Horizontal distance from point to camera: {distance}')
 
     if h1 is not None and h2 is not None:
         dH = np.abs(h1 - h2)
@@ -441,7 +450,7 @@ def moveDistance(start, distance, bearing):
     distance = np.array(distance)
     bearing = np.deg2rad(bearing)
     lat1, lon1, h1 = splitGPS(start)
-    R = 6371e3
+    R = earth_radius
     if start.shape[-1] == 3:
         R += start[..., 2]
     lat2 = np.arcsin(np.sin(lat1) * np.cos(distance / R) +
@@ -460,7 +469,7 @@ def spaceFromGPS(gps, gps0):
     else:
         height = gps[..., 2]
     distance = getDistance(gps0, gps)
-    bearing_rad = np.deg2rad(getBearing(gps0, gps))
+    bearing_rad = getBearing(gps0, gps, in_radians=True)
     return np.array([distance * np.sin(bearing_rad), distance * np.cos(bearing_rad), height]).T
 
 

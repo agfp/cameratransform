@@ -130,8 +130,8 @@ class CameraProjection(ClassWithParameterSet):
             # the intrinsic parameters
             focallength_x_px=Parameter(focallength_x_px, default=3600, type=TYPE_INTRINSIC),  # the focal length in px
             focallength_y_px=Parameter(focallength_y_px, default=3600, type=TYPE_INTRINSIC),  # the focal length in px
-            center_x_px=Parameter(center_x_px, default=0, type=TYPE_INTRINSIC),  # the focal length in mm
-            center_y_px=Parameter(center_y_px, default=0, type=TYPE_INTRINSIC),  # the focal length in mm
+            center_x_px=Parameter(center_x_px, default=0, type=TYPE_INTRINSIC),  # the center of the image in px
+            center_y_px=Parameter(center_y_px, default=0, type=TYPE_INTRINSIC),  # the center of the image in px
             image_height_px=Parameter(image_height_px, default=3456, type=TYPE_INTRINSIC),  # the image height in px
             image_width_px=Parameter(image_width_px, default=4608, type=TYPE_INTRINSIC),  # the image width in px
             sensor_height_mm=Parameter(sensor_height_mm, default=13.0, type=TYPE_INTRINSIC),  # the sensor height in mm
